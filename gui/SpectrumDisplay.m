@@ -18,7 +18,7 @@ classdef SpectrumDisplay < Display
         xLimit; % Display limit in x direction
         yLimit; % Display limir in y direction
         
-        startPoint; 
+        startPoint;
         mouseLocation;
         currentLine;
         leftMouseDown = 0;
@@ -102,7 +102,7 @@ classdef SpectrumDisplay < Display
             %   addPeakDetectionMenu()
             
             labelPeaks = uimenu(obj.contextMenu, 'Label', 'Label Peaks', 'Separator', 'on');
-                        
+            
             for i = 1:length(classNames)
                 obj.peakDetectionMenuItem(i) = uimenu(labelPeaks, 'Label', classNames{i}, 'Callback', @(src, evnt)obj.labelPeaksWithMethod(i));
             end
@@ -195,7 +195,7 @@ classdef SpectrumDisplay < Display
             for i = 1:length(obj.peakDetectionMenuItem)
                 try
                     set(obj.peakDetectionMenuItem(i), 'Checked', 'off');
-                catch 
+                catch
                     % Do nothing, happens if the peak detection menu item
                     % no longer exists
                 end
@@ -241,14 +241,14 @@ classdef SpectrumDisplay < Display
             
             obj.updateDisplay();
         end
-                
+        
         function display = openInNewWindow(obj)
             % openInNewWindow Opens the spectral data in a new window.
             %
             %   openInNewWindow()
             %
-            %   Open the spectral data in a new window with same display 
-            %   options applied. Any changes made the the underlying 
+            %   Open the spectral data in a new window with same display
+            %   options applied. Any changes made the the underlying
             %   spectrum will be updated in the new display too.
             
             figure = Figure;
@@ -257,7 +257,7 @@ classdef SpectrumDisplay < Display
             set(figure.handle, 'Color', 'w');
             
             spectrumPanel = SpectrumPanel(figure, obj.data);
-           
+            
             set(spectrumPanel.handle, 'BackgroundColor', 'w');
             
             display = spectrumPanel.spectrumDisplay;
@@ -269,10 +269,10 @@ classdef SpectrumDisplay < Display
             %
             %   openCopyInNewWindow()
             %
-            %   Open a copy of the spectral data in a new window so that if 
-            %   any changes are made to the spectrum in this display they 
+            %   Open a copy of the spectral data in a new window so that if
+            %   any changes are made to the spectrum in this display they
             %   aren't updated in the new display.
-        
+            
             
             figure = Figure;
             figure.showStandardFigure();
@@ -285,7 +285,7 @@ classdef SpectrumDisplay < Display
         
         
         function exportToImage(obj)
-            % exportToImage exports a spectrum to a PDF image. 
+            % exportToImage exports a spectrum to a PDF image.
             
             [fileName, pathName, filterIndex] = uiputfile([obj.lastSavedPath 'spectrum.pdf'], 'Export image');
             
@@ -322,16 +322,20 @@ classdef SpectrumDisplay < Display
             %TODO
         end
         
-        function updateDisplay(obj)            
+        function updateDisplay(obj)
             obj.plotSpectrum();
             
             obj.fixLimits();
             obj.updateLimits();
             
             if(~isempty(obj.peakList))
-                indicies = obj.peakList >= obj.xLimit(1) & obj.peakList <= obj.xLimit(2);
-                
-                xData = obj.peakList(indicies);
+                indicies = obj.peakDetails(:,2) >= obj.xLimit(1) & obj.peakDetails(:,2) <= obj.xLimit(2);
+                peakList = obj.peakList(indicies);
+                if ~isempty(peakList) && ~isa(peakList(1), 'double')
+                    xData = obj.peakDetails(indicies,2);
+                else
+                    xData = obj.peakList(indicies);
+                end
                 yData = obj.peakHeight(indicies);
                 
                 yPos = ((obj.yLimit(2) - obj.yLimit(1)) * 0.95) + obj.yLimit(1);
@@ -341,10 +345,14 @@ classdef SpectrumDisplay < Display
                 [m, indicies] = sort(yData, 'descend');
                 
                 for i = 1:min(10, length(xData))
-                    text(xData(indicies(i)), yData(indicies(i)), num2str(xData(indicies(i))), 'Parent', obj.axisHandle);
+                    if isa(peakList(i), 'double')
+                        text(xData(indicies(i)), yData(indicies(i)), num2str(xData(indicies(i))), 'Parent', obj.axisHandle);
+                    else
+                        text(xData(indicies(i)), yData(indicies(i)), strcat(peakList(indicies(i)), ' ', num2str(xData(indicies(i)))), 'Parent', obj.axisHandle);
+                    end
                 end
             end
-                        
+            
             % Set up callback functions such as button down functions
             set(obj.plotHandle, 'ButtonDownFcn', @(src, evnt)obj.buttonDownCallback());
             set(obj.axisHandle, 'ButtonDownFcn', @(src, evnt)obj.buttonDownCallback());
@@ -360,7 +368,7 @@ classdef SpectrumDisplay < Display
         
         function mouseMovedCallback(obj)
             obj.deleteLine();
-                        
+            
             if(obj.leftMouseDown)
                 axes(obj.axisHandle);
                 
@@ -403,10 +411,10 @@ classdef SpectrumDisplay < Display
                     [minVal, minLoc] = min(abs(obj.data.spectralChannels - currentPoint(1)));
                     minVal = obj.data.spectralChannels(minLoc);
                     
-                    peakSelectionEvent = PeakSelectionEvent(PeakSelectionEvent.Exact, minVal); 
+                    peakSelectionEvent = PeakSelectionEvent(PeakSelectionEvent.Exact, minVal);
                     notify(obj, 'PeakSelected', peakSelectionEvent);
                 else
-                    if(obj.aboveAxis ~= 0 && isNotSamePoint) 
+                    if(obj.aboveAxis ~= 0 && isNotSamePoint)
                         obj.deleteLine();
                         
                         xPoint = currentPoint(1, 1);
@@ -508,7 +516,7 @@ classdef SpectrumDisplay < Display
             if(~isempty(obj.currentLine))
                 try
                     delete(obj.currentLine);
-                catch 
+                catch
                     warning('TODO: Handle error')
                 end
                 
@@ -523,7 +531,7 @@ classdef SpectrumDisplay < Display
         
         function buttonDownCallback(obj)
             currentPoint = get(obj.axisHandle, 'CurrentPoint');
-                        
+            
             xPoint = currentPoint(1, 1);
             yPoint = currentPoint(1, 2);
             
